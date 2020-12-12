@@ -4,7 +4,7 @@ import axios from 'axios';
 import "components/Application.scss";
 import DayList from "components/DayList";
 import Appointment from "components/Appointment";
-import { getAppointmentsForDay, getInterview } from "helpers/selectors";
+import { getAppointmentsForDay, getInterview, getInterviewersForDay } from "helpers/selectors";
 
 
 export default function Application(props) {
@@ -34,10 +34,49 @@ export default function Application(props) {
     });
   },[]);
 
+  function bookInterview(id, interview) {
+    console.log(id, interview);
+    const appointment = {
+      ...state.appointments[id],
+      interview: { ...interview }
+    };
+    const appointments = {
+      ...state.appointments,
+      [id]: appointment
+    };
+    return axios.put(`http://localhost:8001/api/appointments/${id}`, {interview})
+    .then(() => {
+      setState({
+        ...state,
+        appointments
+      });
+    })
+  }
+
+  function cancelInterview(id) {
+    console.log(id);
+    const appointment = {
+      ...state.appointments[id],
+      interview: null
+    };
+    const appointments = {
+      ...state.appointments, [id]: appointment
+    };
+
+    return axios.delete(`http://localhost:8001/api/appointments/${id}`)
+    .then(() => {
+      console.log("deleted")
+      setState({
+        ...state, appointments  
+      });
+    })
+  }
+
   const appointments = getAppointmentsForDay(state, state.day);
+  const dailyInterviewers = getInterviewersForDay(state, state.day);
 
   const schedule = appointments.map((appointment) => {
-  const interview = getInterview(state, appointment.interview);
+    const interview = getInterview(state, appointment.interview);
 
   return (
     <Appointment
@@ -45,9 +84,14 @@ export default function Application(props) {
       id={appointment.id}
       time={appointment.time}
       interview={interview}
+      interviewers={dailyInterviewers}
+      bookInterview={bookInterview}
+      cancelInterview={cancelInterview}
     />
   );
 });
+
+
   
   return (
     <main className="layout">
